@@ -13,6 +13,6 @@ from Si705x import Si705x as sensor
 with SMBusWrapper(0) as bus:
 
 	mysensor = sensor(bus)
-	(c, f) = sensor.getTemp()
+	(c, f) = mysensor.getTemp()
 	print("{:.1f} Celsius, {:.1f} Fahrenheit".format(c, f))
   ```
