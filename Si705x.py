@@ -36,8 +36,8 @@ class Si705x():
 	
 	def getTemp(self):
 		(msb, lsb, crc) = self._send_cmd(SI7050_MEASTEMP_HOLD_CMD, 3)
-		crc_init = crc8_dallas_maxim(0, msb)
-		assert crc == crc8_dallas_maxim(crc_init, lsb), "getTemp(): Bad CRC"
+		crc_init = Si705x.crc8_dallas_maxim(0, msb)
+		assert crc == Si705x.crc8_dallas_maxim(crc_init, lsb), "getTemp(): Bad CRC"
 		cTemp = ((msb * 256 + lsb) * 175.72 / 65536.0) - 46.85
 		fTemp = cTemp * 1.8 + 32
 		return cTemp, fTemp
@@ -66,11 +66,12 @@ class Si705x():
 		# Left nibble of SN
 		first_access = self._send_cmd(SI7050_READ_ID_BYTE1, 8)
 		# Break down the data into (data, crc) tuples
+		print(first_access)
 		chunks = (first_access[x:x+2] for x in range(0, len(first_access), 2))
 		crc_init = 0
 		sna = []
 		for data, crc in chunks:
-			assert crc == crc8_dallas_maxim(crc_init, data), "Bad CRC: byte:{}".format(data)
+			assert crc == Si705x.crc8_dallas_maxim(crc_init, data), "Bad CRC: byte:{}".format(data)
 			sna.append(data)
 			crc_init = crc
 
@@ -81,7 +82,7 @@ class Si705x():
 		snb = []
 		for data1, data2, crc in chunks:
 			crc_init = crc8_dallas_maxim(crc_init, data1)
-			assert crc == crc8_dallas_maxim(crc_init, data2), "Bad CRC: byte:{}".format(data)
+			assert crc == Si705x.crc8_dallas_maxim(crc_init, data2), "Bad CRC: byte:{}".format(data)
 			snb.extend([data1, data2])
 			crc_init = crc
 			
@@ -90,12 +91,12 @@ class Si705x():
 	def getFirmwareRevision(self):
 		return self._send_cmd(SI7050_READ_FW_REV, 1)[0]
 
-# Utility function
-def crc8_dallas_maxim(crc, a):
-    crc ^= a
-    for _ in range(8):
-        if crc & 0x80:
-            crc = ((crc << 1) ^ 0x31) % 256
-        else:
-            crc = (crc << 1) % 256
-    return crc
+	@staticmethod
+	def crc8_dallas_maxim(crc, a):
+		crc ^= a
+		for _ in range(8):
+			if crc & 0x80:
+				crc = ((crc << 1) ^ 0x31) % 256
+			else:
+				crc = (crc << 1) % 256
+		return crc
